@@ -1,0 +1,130 @@
+<!doctype>
+<html>
+
+<head>
+<script type="text/javascript" src="../web3.js/node_modules/bignumber.js/bignumber.min.js"></script>
+<script type="text/javascript" src="../web3.js/dist/web3-light.js"></script>
+<script type="text/javascript">
+   
+    var Web3 = require('web3');
+    var web3 = new Web3();
+    web3.setProvider(new web3.providers.HttpProvider());
+	
+	function loadPage(){
+		updateAccounts();
+		updateSelects();
+        web3.eth.filter('latest').watch(function() {
+			updateAccounts();
+        });
+	}
+	
+	function updateSelects(){
+		var accounts = web3.eth.accounts;
+		var from = document.getElementById("from");
+		from.options.length = 0;
+		var to = document.getElementById("to");
+		to.options.length = 0;
+		// Add accounts
+		for (i = 0; i < accounts.length; i++){
+			//Add selects
+			from.options[i] = new Option(accounts[i], i);
+			to.options[i] = new Option(accounts[i], i);
+		}
+	}
+	
+	
+	function updateAccounts(){
+		var table = document.getElementById("accountsTable");
+		var accounts = web3.eth.accounts;
+		// Remove old rows
+		for (i = table.rows.length -1; i >0; i --){
+			table.deleteRow(i);
+		}
+		
+		
+		// Add accounts
+		for (i = 0; i < accounts.length; i++){
+			// Add rows
+			var row = table.insertRow();
+			var cell1 = row.insertCell(0);
+			var cell2 = row.insertCell(1);
+			
+			cell1.innerHTML = accounts[i]+" : ";
+			cell2.innerHTML = web3.fromWei(web3.eth.getBalance(accounts[i]));
+		}
+		
+		
+		
+	}
+	
+	function transferEther(){
+		try{
+			var from = document.getElementById("from");
+			var afrom = from.options[from.selectedIndex].text;
+			var to = document.getElementById("to");
+			var ato = to.options[to.selectedIndex].text;
+			var aamount = document.getElementById("amount").value;
+		web3.eth.sendTransaction({from: afrom, to: ato, value: web3.toWei(aamount, 'ether')}, function(err, address) {
+		  if (!err){
+		    document.getElementById("transactionResult").innerText = "Transfer of "+aamount+" ether was Successful"
+		  } else {
+		    document.getElementById("transactionResult").innerText = "Error: "+err
+		  }
+		});
+	} catch(e){
+		document.getElementById("transactionResult").innerText = "Error: "+e
+	}
+	}
+	
+
+    function watchBalance() {
+        var coinbase = web3.eth.coinbase;
+
+        var originalBalance = web3.eth.getBalance(coinbase).toNumber();
+        document.getElementById('coinbase').innerText = 'coinbase: ' + coinbase;
+        document.getElementById('original').innerText = ' original balance: ' + originalBalance + '    watching...';
+
+        web3.eth.filter('latest').watch(function() {
+            var currentBalance = web3.eth.getBalance(coinbase).toNumber();
+            document.getElementById("current").innerText = 'current: ' + currentBalance;
+            document.getElementById("diff").innerText = 'diff:    ' + (currentBalance - originalBalance);
+        });
+    }
+
+</script>
+</head>
+<body onload="loadPage()">
+	<h1>Accounts</h1>
+	<table id="accountsTable">
+		<tr>
+		    <td><h3>Id</h3></td>
+		    <td><h3>Balance</h3></td>
+		  </tr>
+	</table>
+	<table id="sendEtherTable">
+		<tr>
+		    <td><h3>From</h3></td>
+			<td></td>
+		    <td><h3>To</h3></td>
+		    <td><h3>Amount</h3></td>
+			<td></td>
+		  </tr>
+		<tr>
+		    <td><select id="from"></select></td>
+			<td></td>
+		    <td><select id="to"></select></td>
+		    <td><input type="text" name="amount" id="amount"></td>
+		    <td><button type="sendTransfer" onClick="transferEther();">Transfer Ether</button></td>
+		  </tr>
+	</table>
+	<div id="transactionResult"></div>
+    <h1>coinbase balance</h1>
+    <button type="button" onClick="watchBalance();">watch balance</button>
+    <div></div>
+    <div id="coinbase"></div>
+    <div id="original"></div>
+    <div id="current"></div>
+    <div id="diff"></div>
+</body>
+</html>
+
